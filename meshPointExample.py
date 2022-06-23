@@ -20,6 +20,7 @@ import os
 EXPERIMENT_NAME = 'default'
 PROJECT_PATH = 'D:/127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project.syg'
 
+
 if __name__ == '__main__':
 
     # get the project object, list of mesh names, list of counting points
