@@ -20,13 +20,12 @@ import os
 EXPERIMENT_NAME = 'default'
 PROJECT_PATH = 'D:/127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project.syg'
 
-
 if __name__ == '__main__':
 
     # get the project object, list of mesh names, list of counting points
     project = sy.get_project(PROJECT_PATH)
     mesh_names = project.impl.GetMeshNamesAndSizes(EXPERIMENT_NAME)
-    counting_points = project.get_counting_points()
+    counting_points = project.get_counting_points(EXPERIMENT_NAME)
 
     # iterate through list of meshes
     for mesh_name in mesh_names:
