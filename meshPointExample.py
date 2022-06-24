@@ -2,6 +2,8 @@ import syglass as sy
 import trimesh
 import time
 import os
+import csv
+
 
 #              ________________________________________________              #
 #/=============| Mesh / Counting Point Colocalization Example |=============\#
@@ -26,17 +28,21 @@ if __name__ == '__main__':
     # get the project object, list of mesh names, list of counting points
     project = sy.get_project(PROJECT_PATH)
     mesh_names = project.impl.GetMeshNamesAndSizes(EXPERIMENT_NAME)
+    #get_counting_points exports the x,yz, coordinates in voxel units from the bottom left corner
     counting_points = project.get_counting_points(EXPERIMENT_NAME)
+    
 
     # iterate through list of meshes
     for mesh_name in mesh_names:
         print('\nProcessing mesh: ' + mesh_name)
         project.impl.ExportMeshOBJs(EXPERIMENT_NAME, mesh_name, 'temp_mesh.obj')
+        
 
         # meshes take a second to export—here we wait for them
         while project.impl.GetMeshIOPercentage() != 100.0:
             time.sleep(0.1)
         mesh = trimesh.load('temp_mesh.obj', force='mesh')
+    
 
         # check the mesh against each point in each color series
         for series in counting_points:
@@ -52,12 +58,26 @@ if __name__ == '__main__':
                 # trimesh expects XYZ points, not ZYX, so we'll swap these axes
                 xyz_point = [point[2], point[1], point[0]] 
 
+        
                 # check to see whether the point is contained within the current mesh
                 if mesh.contains([xyz_point]):
+                    filename = 'C:/Users/emmak/Desktop/' + mesh_name + '.csv'
+                    if os.path.exists(filename):
+                        f = open(filename, 'a', newline = '')
+                        writer = csv.writer(f)
+                        writer.writerow([series, xyz_point[0], xyz_point[1], xyz_point[2]])
+                    else:
+                        f = open(filename, 'a', newline = '')
+                        writer = csv.writer(f)
+                        writer.writerow(['color', 'x', 'y', 'z'])
+                        writer.writerow([series, xyz_point[0], xyz_point[1], xyz_point[2]])
+
                     points_contained = points_contained + 1
+                    
 
             # print the results for each series/mesh pair
             print(mesh_name + ' contains ' + str(points_contained) + ' ' + series.lower() + ' counting points.')
+
 
     # remove this temporary file that was written earlier
     os.remove('temp_mesh.obj')
