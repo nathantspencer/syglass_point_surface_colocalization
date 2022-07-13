@@ -3,6 +3,9 @@ import trimesh
 import time
 import os
 import csv
+import subprocess
+import pathlib
+import numpy as np
 
 #              ________________________________________________              #
 #/=============| Mesh / Counting Point Colocalization Example |=============\#
@@ -10,30 +13,30 @@ import csv
 #|  Compares the counting points and meshes for a given project and         |#
 #|  reports how many points are contained within each mesh.                 |#
 #|                                                                          |#
-#|  Note that for now the project must NOT be opened in syGlass when this   |#
-#|  script runs. This can later be built into a syGlass plugin, which will  |#
-#|  not suffer from this issue.                                             |#
-#|                                                                          |#
 #\==========================================================================/#
 
 
-# constants: modify as needed before running the script
-EXPERIMENT_NAME = 'default'
-PROJECT_PATH = 'D:/127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project127 dmso MII O_N pb-02-Airyscan Processing-06_project.syg'
-
-
-if __name__ == '__main__':
-
-    # get the project object, list of mesh names, list of counting points
-    project = sy.get_project(PROJECT_PATH)
+def count_points(project):
+    
+    EXPERIMENT_NAME = project.get_current_experiment()
+    projectPath = project.get_path_to_syg_file().string()
+    print('')
+    print("Extracting project from: " + projectPath)
+    # get the list of mesh names, list of counting points, transformation matrix
     mesh_names = project.impl.GetMeshNamesAndSizes(EXPERIMENT_NAME)
-    # TODO: get_counting_points exports the x,y,z coordinates in voxel units from the bottom left corner
     counting_points = project.get_counting_points(EXPERIMENT_NAME)
+    transformation_matrix = project.get_mesh_transformation(EXPERIMENT_NAME)
+    identity = np.identity(4)
+    is_identity = False
+    if np.array_equal(transformation_matrix, identity):
+        is_identity = True
+    print(is_identity)
 
     # iterate through list of meshes
     for mesh_name in mesh_names:
         print('\nProcessing mesh: ' + mesh_name)
         project.impl.ExportMeshOBJs(EXPERIMENT_NAME, mesh_name, 'temp_mesh.obj')
+        has_points = False
 
         # meshes take a second to export—here we wait for them
         while project.impl.GetMeshIOPercentage() != 100.0:
@@ -61,14 +64,38 @@ if __name__ == '__main__':
                     points_contained = points_contained + 1
 
             # print the results for each series/mesh pair
-            print(mesh_name + ' contains ' + str(points_contained) + ' ' + series.lower() + ' counting points.')
+            if points_contained > 0:
+                has_points = True
+                print(mesh_name + ' contains ' + str(points_contained) + ' ' + series.lower() + ' counting points.')
 
+        # determine if mesh contains points
+        if not (has_points):
+            print("No counting points found.")
+        # if there are points, add to .csv file for mesh from list
         if len(points_in_mesh_list) > 0:
             filename = mesh_name + '.csv'
-            with open(filename, 'w', newline = '') as f:
+            project_folder_path = pathlib.Path(projectPath).parent.resolve()
+            with open(str(project_folder_path) + '\\' + filename, 'w', newline = '') as f:
                 writer = csv.writer(f)
                 writer.writerow(['color', 'x', 'y', 'z'])
                 writer.writerows(points_in_mesh_list)
 
     # remove this temporary file that was written earlier
     os.remove('temp_mesh.obj')
+    subprocess.run(['explorer', str(project_folder_path)])
+
+
+def main(args):
+    print("Point Surface Colocalization")
+    print("-----------------------------")
+    print("Compares the counting points and meshes for a given project")
+    print("and reports how many points are contained within each mesh.")
+    print("-----------------------------")
+
+    projectList = args["selected_projects"]
+    if len(projectList) < 1:
+        print("Highlight a project before running to select a project!")
+    
+    if len(projectList) >= 1:
+        for project in projectList:
+            count_points(project)
