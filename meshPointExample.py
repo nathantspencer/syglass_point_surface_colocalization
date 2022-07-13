@@ -5,6 +5,7 @@ import os
 import csv
 import subprocess
 import pathlib
+import numpy as np
 
 #              ________________________________________________              #
 #/=============| Mesh / Counting Point Colocalization Example |=============\#
@@ -21,9 +22,15 @@ def count_points(project):
     projectPath = project.get_path_to_syg_file().string()
     print('')
     print("Extracting project from: " + projectPath)
-    # get the list of mesh names, list of counting points
+    # get the list of mesh names, list of counting points, transformation matrix
     mesh_names = project.impl.GetMeshNamesAndSizes(EXPERIMENT_NAME)
     counting_points = project.get_counting_points(EXPERIMENT_NAME)
+    transformation_matrix = project.get_mesh_transformation(EXPERIMENT_NAME)
+    identity = np.identity(4)
+    is_identity = False
+    if np.array_equal(transformation_matrix, identity):
+        is_identity = True
+    print(is_identity)
 
     # iterate through list of meshes
     for mesh_name in mesh_names:
